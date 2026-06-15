@@ -1,0 +1,241 @@
+// ── CINEMATIC TOPBAR SCROLL ──
+(function() {
+  var tb = document.getElementById('cine-topbar');
+  if (!tb) return;
+  window.addEventListener('scroll', function() {
+    // Only toggle scroll state on home page; inner pages always stay dark
+    if (tb.classList.contains('always-dark')) return;
+    if (window.scrollY > 30) tb.classList.add('scrolled');
+    else tb.classList.remove('scrolled');
+  }, { passive: true });
+})();
+
+// ── CINEMATIC VIDEO FADE-IN ──
+(function() {
+  var v = document.getElementById('cineHeroVideo');
+  if (!v) return;
+  v.addEventListener('loadeddata', function() { v.classList.add('loaded'); });
+  v.addEventListener('error', function() {
+    var hero = document.querySelector('.cine-hero');
+    if (hero) hero.style.background = 'linear-gradient(135deg,#071A52 0%,#0A1F6B 60%,#173EA5 100%)';
+  });
+})();
+
+// ── CINEMATIC HERO VISIBILITY: hide when not on home ──
+function updateCineHero(pid) {
+  var hero = document.getElementById('cine-hero-section');
+  var tb = document.getElementById('cine-topbar');
+  if (!hero) return;
+  if (pid === 'home') {
+    hero.style.display = '';
+    // On home page: transparent at top, dark on scroll
+    if (tb) {
+      tb.classList.remove('scrolled', 'always-dark');
+      if (window.scrollY > 30) tb.classList.add('scrolled');
+    }
+  } else {
+    hero.style.display = 'none';
+    // On inner pages: always show solid dark topbar
+    if (tb) {
+      tb.classList.remove('scrolled');
+      tb.classList.add('always-dark');
+    }
+  }
+}
+
+// ── SYNC CINE NAV ACTIVE STATE ──
+var _cineNavMap = {
+  'home': 'cnav-home', 'guide-5-10': 'cnav-guide-5-10',
+  'science-11-12': 'cnav-science-11-12', 'careers': 'cnav-careers',
+  'exams': 'cnav-exams', 'resources': 'cnav-resources'
+};
+function updateCineNav(pid) {
+  Object.values(_cineNavMap).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  if (_cineNavMap[pid]) {
+    var el = document.getElementById(_cineNavMap[pid]);
+    if (el) el.classList.add('active');
+  }
+}
+
+// ── PREMIUM JS ──
+
+// Scroll Progress Bar + Topbar scroll effect
+window.addEventListener('scroll', function() {
+  var sp = document.getElementById('scrollProgress');
+  if (sp) {
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    sp.style.width = (docHeight > 0 ? (scrollTop / docHeight) * 100 : 0) + '%';
+  }
+  var tb = document.getElementById('main-topbar');
+  if (tb) { if (window.scrollY > 40) tb.classList.add('scrolled'); else tb.classList.remove('scrolled'); }
+  var btt = document.getElementById('backToTop');
+  if (btt) { if (window.scrollY > 400) btt.classList.add('visible'); else btt.classList.remove('visible'); }
+});
+
+// Background Particle System
+(function() {
+  var c = document.getElementById('bgParticles'); if (!c) return;
+  var ctx = c.getContext('2d'), W, H, pts = [];
+  function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+  function Pt() {
+    this.x = Math.random()*W; this.y = Math.random()*H;
+    this.r = Math.random()*1.5+0.3;
+    this.vx = (Math.random()-0.5)*0.22; this.vy = (Math.random()-0.5)*0.22;
+    this.a = Math.random()*0.15+0.04;
+    this.color = Math.random()>0.6?'255,138,0':(Math.random()>0.5?'0,169,165':'10,31,107');
+  }
+  function init(){resize();pts=[];for(var i=0;i<22;i++)pts.push(new Pt());}
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba('+p.color+','+p.a+')';ctx.fill();p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;});
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',init);init();draw();
+})();
+
+var currentPage = 'home';
+var pageIds = ['home','guide-5-10','science-11-12','careers','communication','resources','exams'];
+
+function showPage(pid) {
+  pageIds.forEach(function(id) {
+    var el = document.getElementById('page-' + id);
+    if (el) el.classList.remove('active');
+    var tb = document.getElementById('tnav-' + id);
+    if (tb) tb.classList.remove('active');
+    var sb = document.getElementById('snav-' + id);
+    if (sb) sb.classList.remove('active');
+  });
+  var target = document.getElementById('page-' + pid);
+  if (target) target.classList.add('active');
+  var tnav = document.getElementById('tnav-' + pid);
+  if (tnav) tnav.classList.add('active');
+  var snav = document.getElementById('snav-' + pid);
+  if (snav) snav.classList.add('active');
+  currentPage = pid;
+  updateCineNav(pid);
+  updateCineHero(pid);
+  closeSidebar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(triggerFadeInsAll, 100);
+}
+
+function toggleSidebar() {
+  var s = document.getElementById('sidebar');
+  var o = document.getElementById('overlay');
+  if (s.classList.contains('open')) { closeSidebar(); }
+  else { s.classList.add('open'); o.classList.add('show'); }
+}
+function closeSidebar() {
+  var s = document.getElementById('sidebar'); if(s) s.classList.remove('open');
+  var o = document.getElementById('overlay'); if(o) o.classList.remove('show');
+}
+
+(function(){
+  var h = new Date().getHours();
+  var g = h < 12 ? 'Good Morning 👋' : h < 17 ? 'Good Afternoon 👋' : 'Good Evening 👋';
+  var el = document.getElementById('greeting'); if(el) el.textContent = g;
+})();
+
+function triggerFadeInsAll() {
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e, i) {
+      if (e.isIntersecting) { setTimeout(function(){ e.target.classList.add('visible'); }, i * 60); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.page-section.active .fade-in:not(.visible), .page-section.active .reveal:not(.visible)').forEach(function(el) { obs.observe(el); });
+}
+
+(function(){
+  var c = document.getElementById('heroCanvas'); if(!c) return;
+  var ctx = c.getContext('2d'), W, H, pts = [];
+  function resize(){ W = c.width = c.offsetWidth; H = c.height = c.offsetHeight; }
+  function Pt(){ this.x=Math.random()*W;this.y=Math.random()*H;this.r=Math.random()*1.8+0.4;this.vx=(Math.random()-0.5)*0.35;this.vy=(Math.random()-0.5)*0.35;this.a=Math.random()*0.45+0.08; }
+  function init(){ resize();pts=[];for(var i=0;i<75;i++)pts.push(new Pt()); }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(function(p){ ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,'+p.a+')';ctx.fill();p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1; });
+    for(var i=0;i<pts.length;i++){for(var j=i+1;j<pts.length;j++){var dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<110){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle='rgba(255,255,255,'+(0.07*(1-d/110))+')';ctx.lineWidth=0.5;ctx.stroke();}}}
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', init); init(); draw();
+})();
+
+function showGrade(id, btn) {
+  var panels = document.querySelectorAll('#page-guide-5-10 .grade-panel');
+  var btns = document.querySelectorAll('#page-guide-5-10 .grade-tab');
+  panels.forEach(function(p){ p.classList.remove('active'); });
+  btns.forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  triggerFadeInsAll();
+}
+
+function showStage(id, btn) {
+  // Scope to communication page only
+  var commPage = document.getElementById('page-communication');
+  if (!commPage) return;
+  commPage.querySelectorAll('.stage-panel').forEach(function(p){ p.classList.remove('active'); });
+  commPage.querySelectorAll('.stage-tab').forEach(function(b){ b.classList.remove('active'); });
+  var target = document.getElementById(id);
+  if (target) target.classList.add('active');
+  btn.classList.add('active');
+  triggerFadeInsAll();
+}
+
+function showTab(id, btn) {
+  var parentSection = btn.closest('.page-section');
+  if (!parentSection) return;
+  parentSection.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  parentSection.querySelectorAll('.section-tab').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  triggerFadeInsAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+var currentLang = localStorage.getItem('vidyapath-lang') || 'en';
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('vidyapath-lang', lang);
+  document.querySelectorAll('[id^="btn-en"]').forEach(function(el){ el.classList.toggle('active', lang === 'en'); });
+  document.querySelectorAll('[id^="btn-mr"]').forEach(function(el){ el.classList.toggle('active', lang === 'mr'); });
+  applyLangAll();
+}
+function applyLangAll() {
+  var mr = currentLang === 'mr';
+  document.querySelectorAll('[data-en][data-mr]').forEach(function(el) {
+    var val = mr ? el.getAttribute('data-mr') : el.getAttribute('data-en');
+    if (val !== null) el.innerHTML = val;
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  showPage('home');
+  updateCineNav('home');
+  updateCineHero('home');
+  setLang(currentLang);
+  triggerFadeInsAll();
+  // Init first grade tab
+  var fp = document.querySelector('#page-guide-5-10 .grade-panel');
+  var fb = document.querySelector('#page-guide-5-10 .grade-tab');
+  if(fp) fp.classList.add('active');
+  if(fb) fb.classList.add('active');
+  // Init first tab in each tabbed page
+  // Init first stage panel in communication page
+  var commPage = document.getElementById('page-communication');
+  if (commPage) {
+    var firstStagePanel = commPage.querySelector('.stage-panel');
+    var firstStageTab = commPage.querySelector('.stage-tab');
+    if (firstStagePanel) firstStagePanel.classList.add('active');
+    if (firstStageTab) firstStageTab.classList.add('active');
+  }
+  ['page-science-11-12','page-careers','page-resources','page-exams'].forEach(function(pid){
+    var el = document.getElementById(pid); if(!el) return;
+    var fp2 = el.querySelector('.tab-panel'); var fb2 = el.querySelector('.section-tab');
+    if(fp2) fp2.classList.add('active'); if(fb2) fb2.classList.add('active');
+  });
+});
